@@ -261,8 +261,9 @@ async function sbFetch(path, method='GET', body=null) {
 async function uploadImage(file, productId) {
   const ext = file.name.split('.').pop();
   const path = `${productId}.${ext}`;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
-    method: 'POST',
+  // Intentar PUT (upsert) — reemplaza si ya existe
+  let res = await fetch(`${SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
+    method: 'PUT',
     headers: {
       'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -271,8 +272,26 @@ async function uploadImage(file, productId) {
     },
     body: file
   });
-  if (!res.ok) throw new Error('Error subiendo imagen');
-  return `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}`;
+  // Si PUT falla intentar POST
+  if (!res.ok) {
+    res = await fetch(`${SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': file.type,
+        'x-upsert': 'true'
+      },
+      body: file
+    });
+  }
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error('Error subiendo imagen: ' + errText);
+  }
+  // Forzar cache-bust con timestamp
+  const ts = Date.now();
+  return `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}?t=${ts}`;
 }
 
 // ── LOAD & RENDER PRODUCTS ──
@@ -346,8 +365,16 @@ function editProduct(id) {
   document.getElementById('fOrder').value = p.sort_order;
   document.getElementById('fDesc').value = p.description || '';
   const prev = document.getElementById('imgPreview');
-  if (p.image_url) { prev.src = p.image_url; prev.style.display = 'block'; document.getElementById('uploadText').style.display = 'none'; }
-  else { prev.style.display = 'none'; document.getElementById('uploadText').style.display = 'block'; }
+  const currentImg = p.image_url || null;
+  if (currentImg) {
+    prev.src = currentImg;
+    prev.style.display = 'block';
+    document.getElementById('uploadText').style.display = 'none';
+  } else {
+    prev.style.display = 'none';
+    document.getElementById('uploadText').style.display = 'block';
+    document.getElementById('uploadText').textContent = '📷 Tocá para subir una imagen';
+  }
   document.getElementById('formCard').style.display = 'block';
   document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
 }
@@ -413,6 +440,9 @@ async function saveProduct() {
       // Update existing
       await sbFetch(`/rest/v1/products?id=eq.${editingId}`, 'PATCH', data);
       showToast('✓ Producto actualizado', 'success');
+      // Forzar recarga de imagen en la lista (cache-bust)
+      const rowImg = document.querySelector(`#row_${editingId} .prod-img`);
+      if (rowImg && image_url) { rowImg.src = image_url + '&r=' + Date.now(); }
     } else {
       // Insert new
       data.id = id;
