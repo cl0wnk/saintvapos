@@ -701,7 +701,7 @@
       <div class="modal-tag">Saint Vapos</div>
       <div class="modal-name" id="modalName"></div>
       <div class="modal-price-row">
-        <div class="modal-price">$24.999</div>
+        <div class="modal-price" id="modalPrice">$24.999</div>
         <div class="modal-price-note">+ costo de envío Uber</div>
       </div>
       <p class="modal-desc" id="modalDesc"></p>
@@ -818,6 +818,7 @@ function openModal(id) {
     : NO_IMG_HTML;
   document.getElementById('modalName').textContent = p.name;
   document.getElementById('modalDesc').textContent = p.description || '';
+  document.getElementById('modalPrice').textContent = '$' + Number(p.price).toLocaleString('es-AR');
   const waMsg = encodeURIComponent('Hola! Tenes disponible ' + p.name + '?');
   document.querySelector('.modal-cta-wa').href = 'https://wa.me/5491126973767?text=' + waMsg;
   document.getElementById('modal').scrollTop = 0;
