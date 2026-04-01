@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Saint Vapos — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --black:#080809;--surface:#0f0f11;--card:#16161a;
+      --border:rgba(255,255,255,.08);--white:#f4f2ef;
+      --muted:rgba(244,242,239,.45);--red:#d63031;--violet:#7c3aed;
+      --green:#00b894;--grad:linear-gradient(135deg,#d63031 0%,#7c3aed 100%);
+      --font-display:'Bebas Neue',sans-serif;--font-body:'DM Sans',sans-serif;
+    }
+    body{background:var(--black);color:var(--white);font-family:var(--font-body);min-height:100vh}
+
+```
+/* ── LOGIN ── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center}
+.login-logo{font-family:var(--font-display);font-size:2rem;letter-spacing:.15em;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.3rem}
+.login-sub{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:2rem}
+.login-box input{width:100%;padding:.85rem 1rem;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;color:var(--white);font-family:var(--font-body);font-size:.95rem;outline:none;margin-bottom:1rem;transition:border-color .2s}
+.login-box input:focus{border-color:var(--violet)}
+.login-box input::placeholder{color:var(--muted)}
+.btn-grad{width:100%;padding:.9rem;background:var(--grad);border:none;border-radius:100px;color:#fff;font-family:var(--font-body);font-size:.85rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
+.btn-grad:hover{opacity:.85}
+.login-error{color:#ff6b6b;font-size:.8rem;margin-top:.75rem;min-height:1.1rem}
+.attempts-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,.07);border-radius:100px;margin:.2rem 0 .5rem;overflow:hidden}
+.attempts-bar{height:100%;width:0%;border-radius:100px;transition:width .4s cubic-bezier(.4,0,.2,1),background .4s}
+.attempts-label{font-size:.72rem;color:var(--muted);margin-bottom:.9rem;min-height:.9rem;text-align:left;letter-spacing:.02em}
+#loginBtn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── ADMIN UI ── */
+#adminUI{display:none;padding:1.5rem;max-width:1100px;margin:0 auto}
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
+.admin-title{font-family:var(--font-display);font-size:1.8rem;letter-spacing:.1em;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.btn-logout{padding:.5rem 1.2rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:100px;color:var(--muted);font-family:var(--font-body);font-size:.75rem;cursor:pointer;transition:all .2s}
+.btn-logout:hover{color:var(--white);border-color:rgba(255,255,255,.2)}
+
+/* ── PRODUCT TABLE ── */
+.section-label{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;display:block}
+.products-list{display:flex;flex-direction:column;gap:.75rem;margin-bottom:2rem}
+.product-row{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;transition:border-color .2s}
+.product-row:hover{border-color:rgba(124,58,237,.3)}
+.prod-img{width:52px;height:52px;border-radius:10px;object-fit:contain;background:#0d0d10;flex-shrink:0}
+.prod-img-placeholder{width:52px;height:52px;border-radius:10px;background:#0d0d10;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,.2);font-size:1.2rem}
+.prod-info{flex:1;min-width:140px}
+.prod-name{font-weight:600;font-size:.95rem;margin-bottom:.2rem}
+.prod-price{font-size:.78rem;color:var(--muted)}
+.prod-actions{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.stock-toggle{display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:.4rem .9rem;border-radius:100px;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:none;transition:all .2s;white-space:nowrap}
+.stock-toggle.on{background:rgba(0,184,148,.15);color:var(--green);border:1px solid rgba(0,184,148,.3)}
+.stock-toggle.off{background:rgba(214,48,49,.12);color:#ff6b6b;border:1px solid rgba(214,48,49,.3)}
+.stock-dot-sm{width:6px;height:6px;border-radius:50%}
+.stock-toggle.on .stock-dot-sm{background:var(--green)}
+.stock-toggle.off .stock-dot-sm{background:#ff6b6b}
+.btn-edit{padding:.4rem .9rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:100px;color:var(--white);font-size:.72rem;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.btn-edit:hover{background:rgba(124,58,237,.2);border-color:var(--violet)}
+.btn-delete{padding:.4rem .7rem;background:rgba(214,48,49,.1);border:1px solid rgba(214,48,49,.2);border-radius:100px;color:#ff6b6b;font-size:.72rem;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.btn-delete:hover{background:rgba(214,48,49,.25)}
+
+/* ── ADD / EDIT FORM ── */
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:2rem}
+.form-title{font-size:.85rem;font-weight:600;margin-bottom:1.2rem;display:flex;align-items:center;gap:.5rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column;gap:.4rem}
+.form-group.full{grid-column:1/-1}
+label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.form-group input,.form-group textarea,.form-group select{
+  padding:.7rem .9rem;background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:10px;color:var(--white);font-family:var(--font-body);font-size:.88rem;
+  outline:none;transition:border-color .2s;resize:vertical
+}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--violet)}
+.form-group select option{background:var(--card);color:var(--white)}
+.form-actions{display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap}
+.btn-save{padding:.75rem 1.8rem;background:var(--grad);border:none;border-radius:100px;color:#fff;font-family:var(--font-body);font-size:.82rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
+.btn-save:hover{opacity:.85}
+.btn-cancel{padding:.75rem 1.4rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:100px;color:var(--muted);font-family:var(--font-body);font-size:.82rem;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{color:var(--white)}
+.btn-add-new{padding:.75rem 1.6rem;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:100px;color:var(--violet);font-family:var(--font-body);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.5rem}
+.btn-add-new:hover{background:rgba(124,58,237,.25)}
+
+/* Image upload */
+.img-upload-area{border:2px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .2s;position:relative}
+.img-upload-area:hover{border-color:var(--violet)}
+.img-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-upload-area p{font-size:.78rem;color:var(--muted)}
+.img-preview{width:80px;height:80px;object-fit:contain;border-radius:8px;background:#0d0d10;margin-bottom:.5rem}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1e1e24;border:1px solid var(--border);border-radius:12px;padding:.8rem 1.2rem;font-size:.82rem;color:var(--white);z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;max-width:280px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:rgba(0,184,148,.4);color:var(--green)}
+.toast.error{border-color:rgba(214,48,49,.4);color:#ff6b6b}
+
+/* Loading */
+.loading-row{text-align:center;padding:2rem;color:var(--muted);font-size:.85rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--violet);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;margin-right:.5rem;vertical-align:middle}
+```
+
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Saint Vapos</div>
+    <div class="login-sub">Panel Administrador</div>
+    <input type="password" id="passInput" placeholder="Contraseña" autocomplete="current-password" oninput="updateBar()"/>
+    <div class="attempts-bar-wrap">
+      <div class="attempts-bar" id="attemptsBar"></div>
+    </div>
+    <div class="attempts-label" id="attemptsLabel"></div>
+    <button class="btn-grad" id="loginBtn" onclick="tryLogin()">Ingresar</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ── ADMIN UI ── -->
+
+<div id="adminUI">
+  <div class="admin-header">
+    <div class="admin-title">Panel Admin</div>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <!-- Add new button -->
+
+  <button class="btn-add-new" onclick="showAddForm()" id="addNewBtn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Agregar producto
+  </button>
+
+  <!-- Add / Edit Form -->
+
+  <div class="form-card" id="formCard" style="display:none;margin-top:1.2rem">
+    <div class="form-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span id="formTitle">Nuevo producto</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>ID único (ej: cherry_fuse)</label>
+        <input type="text" id="fId" placeholder="cherry_fuse"/>
+      </div>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="fName" placeholder="Cherry Fuse"/>
+      </div>
+      <div class="form-group">
+        <label>Precio (sin $)</label>
+        <input type="number" id="fPrice" placeholder="24999" value="24999"/>
+      </div>
+      <div class="form-group">
+        <label>Puffs</label>
+        <input type="text" id="fPuffs" placeholder="40.000" value="40.000"/>
+      </div>
+      <div class="form-group">
+        <label>Stock</label>
+        <select id="fStock">
+          <option value="true">Con stock ✓</option>
+          <option value="false">Sin stock ✗</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Orden (número)</label>
+        <input type="number" id="fOrder" placeholder="1" value="99"/>
+      </div>
+      <div class="form-group full">
+        <label>Descripción</label>
+        <textarea id="fDesc" rows="3" placeholder="Descripción del sabor..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Imagen del producto</label>
+        <div class="img-upload-area" id="uploadArea">
+          <input type="file" id="fImg" accept="image/*" onchange="previewImage(this)"/>
+          <img class="img-preview" id="imgPreview" style="display:none"/>
+          <p id="uploadText">📷 Tocá para subir una imagen</p>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" onclick="saveProduct()">
+        <span id="saveBtnText">Guardar producto</span>
+      </button>
+      <button class="btn-cancel" onclick="hideForm()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Products list -->
+
+  <br>
+  <span class="section-label">Productos actuales</span>
+  <div class="products-list" id="productsList">
+    <div class="loading-row"><span class="spinner"></span>Cargando productos...</div>
+  </div>
+</div>
+
+<!-- Toast -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://otismitbwcgonoqprbgh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90aXNtaXRid2Nnb25vcXByYmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMDUxNzIsImV4cCI6MjA5MDU4MTE3Mn0.kq8ne-RLrxSFqHv_v-tp8C7o7vjPlRuJpi7YsvQ-wwA';
+
+// ── CONTRASEÑA (hasheada en el browser, nunca viaja al servidor) ──
+// SHA-256 de "saintvapos2025" — cambiala generando un nuevo hash
+const PASS_HASH = 'b9289157e081f76ab3d3f86477122106c8ec2cec524ca2bbafb698f6a974c250';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── AUTH ──
+let editingId = null;
+
+const MAX_ATTEMPTS = 3;
+const BLOCK_MINUTES = 10;
+
+function getAttemptData() {
+  try { return JSON.parse(localStorage.getItem('sv_attempts') || '{"count":0,"blockedUntil":0}'); }
+  catch { return {count:0, blockedUntil:0}; }
+}
+function setAttemptData(data) { localStorage.setItem('sv_attempts', JSON.stringify(data)); }
+
+function updateBar() {
+  const data = getAttemptData();
+  // Only show bar after at least 1 failed attempt
+  if (data.count === 0) {
+    document.getElementById('attemptsBar').style.width = '0%';
+    document.getElementById('attemptsLabel').textContent = '';
+    return;
+  }
+  const pct = (data.count / MAX_ATTEMPTS) * 100;
+  const bar = document.getElementById('attemptsBar');
+  bar.style.width = pct + '%';
+  if (data.count === 1) { bar.style.background = '#00b894'; }
+  else if (data.count === 2) { bar.style.background = '#fdcb6e'; }
+  else { bar.style.background = '#d63031'; }
+  const remaining = MAX_ATTEMPTS - data.count;
+  document.getElementById('attemptsLabel').textContent =
+    remaining > 0 ? `${data.count} intento${data.count>1?'s':''} fallido${data.count>1?'s':''} · te ${remaining===1?'queda':'quedan'} ${remaining}` : '';
+}
+
+function checkBlocked() {
+  const data = getAttemptData();
+  const now = Date.now();
+  if (data.blockedUntil && now < data.blockedUntil) {
+    const mins = Math.ceil((data.blockedUntil - now) / 60000);
+    showBlocked(mins);
+    return true;
+  }
+  return false;
+}
+
+function showBlocked(mins) {
+  document.getElementById('loginError').textContent =
+    `🔒 Demasiados intentos. Volvé en ${mins} minuto${mins>1?'s':''}.`;
+  document.getElementById('loginBtn').disabled = true;
+  document.getElementById('passInput').disabled = true;
+  // Countdown update
+  clearInterval(window._blockTimer);
+  window._blockTimer = setInterval(() => {
+    const data = getAttemptData();
+    const remaining = Math.ceil((data.blockedUntil - Date.now()) / 60000);
+    if (remaining <= 0) {
+      clearInterval(window._blockTimer);
+      setAttemptData({count:0, blockedUntil:0});
+      document.getElementById('loginBtn').disabled = false;
+      document.getElementById('passInput').disabled = false;
+      document.getElementById('loginError').textContent = '';
+      document.getElementById('attemptsBar').style.width = '0%';
+      document.getElementById('attemptsLabel').textContent = '';
+    } else {
+      document.getElementById('loginError').textContent =
+        `🔒 Demasiados intentos. Volvé en ${remaining} minuto${remaining>1?'s':''}.`;
+    }
+  }, 15000);
+}
+
+async function tryLogin() {
+  if (checkBlocked()) return;
+  const pass = document.getElementById('passInput').value;
+  if (!pass) return;
+  const hash = await sha256(pass);
+  if (hash === PASS_HASH) {
+    // Éxito — limpiar intentos
+    setAttemptData({count:0, blockedUntil:0});
+    sessionStorage.setItem('sv_admin', '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminUI').style.display = 'block';
+    loadProducts();
+  } else {
+    const data = getAttemptData();
+    data.count = (data.count || 0) + 1;
+    if (data.count >= MAX_ATTEMPTS) {
+      data.blockedUntil = Date.now() + BLOCK_MINUTES * 60 * 1000;
+      setAttemptData(data);
+      document.getElementById('passInput').value = '';
+      updateBar();
+      showBlocked(BLOCK_MINUTES);
+    } else {
+      setAttemptData(data);
+      document.getElementById('passInput').value = '';
+      updateBar();
+      const remaining = MAX_ATTEMPTS - data.count;
+      document.getElementById('loginError').textContent =
+        `Contraseña incorrecta · ${remaining} intento${remaining>1?'s':''} restante${remaining>1?'s':''}`;
+    }
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('sv_admin');
+  location.reload();
+}
+
+document.getElementById('passInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryLogin();
+});
+
+// Check session on load
+if (sessionStorage.getItem('sv_admin') === '1') {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminUI').style.display = 'block';
+  loadProducts();
+} else {
+  // Restore block state if still active
+  checkBlocked();
+  updateBar();
+}
+
+// ── SUPABASE HELPERS ──
+async function sbFetch(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(SUPABASE_URL + path, opts);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  try { return await res.json(); } catch { return null; }
+}
+
+// Upload image to Supabase Storage
+async function uploadImage(file, productId) {
+  const ext = file.name.split('.').pop();
+  const path = `${productId}.${ext}`;
+  // Intentar PUT (upsert) — reemplaza si ya existe
+  let res = await fetch(`${SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
+    method: 'PUT',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  // Si PUT falla intentar POST
+  if (!res.ok) {
+    res = await fetch(`${SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': file.type,
+        'x-upsert': 'true'
+      },
+      body: file
+    });
+  }
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error('Error subiendo imagen: ' + errText);
+  }
+  // Forzar cache-bust con timestamp
+  const ts = Date.now();
+  return `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}?t=${ts}`;
+}
+
+// ── LOAD & RENDER PRODUCTS ──
+let products = [];
+
+async function loadProducts() {
+  try {
+    products = await sbFetch('/rest/v1/products?select=*&order=sort_order.asc');
+    renderProductList();
+  } catch(e) {
+    document.getElementById('productsList').innerHTML = `<div class="loading-row" style="color:#ff6b6b">Error: ${e.message}</div>`;
+  }
+}
+
+function renderProductList() {
+  const list = document.getElementById('productsList');
+  if (!products.length) { list.innerHTML = '<div class="loading-row">No hay productos aún.</div>'; return; }
+  list.innerHTML = products.map(p => `
+    <div class="product-row" id="row_${p.id}">
+      ${p.image_url
+        ? `<img class="prod-img" src="${p.image_url}" alt="${p.name}">`
+        : `<div class="prod-img-placeholder">📦</div>`}
+      <div class="prod-info">
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-price">$${Number(p.price).toLocaleString('es-AR')} · ${p.puffs} puffs · orden ${p.sort_order}</div>
+      </div>
+      <div class="prod-actions">
+        <button class="stock-toggle ${p.stock ? 'on' : 'off'}" onclick="toggleStock('${p.id}', ${p.stock})">
+          <span class="stock-dot-sm"></span>${p.stock ? 'Con stock' : 'Sin stock'}
+        </button>
+        <button class="btn-edit" onclick="editProduct('${p.id}')">Editar</button>
+        <button class="btn-delete" onclick="deleteProduct('${p.id}', '${p.name}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── TOGGLE STOCK (un click) ──
+async function toggleStock(id, current) {
+  try {
+    await sbFetch(`/rest/v1/products?id=eq.${id}`, 'PATCH', { stock: !current });
+    const p = products.find(x => x.id === id);
+    if (p) p.stock = !current;
+    renderProductList();
+    showToast((!current ? '✓ Con stock' : '✗ Sin stock') + ` — ${p.name}`, !current ? 'success' : '');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+// ── FORM ──
+function showAddForm() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Nuevo producto';
+  document.getElementById('saveBtnText').textContent = 'Guardar producto';
+  document.getElementById('fId').disabled = false;
+  clearForm();
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function editProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('formTitle').textContent = `Editando: ${p.name}`;
+  document.getElementById('saveBtnText').textContent = 'Guardar cambios';
+  document.getElementById('fId').value = p.id;
+  document.getElementById('fId').disabled = true;
+  document.getElementById('fName').value = p.name;
+  document.getElementById('fPrice').value = p.price;
+  document.getElementById('fPuffs').value = p.puffs;
+  document.getElementById('fStock').value = String(p.stock);
+  document.getElementById('fOrder').value = p.sort_order;
+  document.getElementById('fDesc').value = p.description || '';
+  const prev = document.getElementById('imgPreview');
+  const currentImg = p.image_url || null;
+  if (currentImg) {
+    prev.src = currentImg;
+    prev.style.display = 'block';
+    document.getElementById('uploadText').style.display = 'none';
+  } else {
+    prev.style.display = 'none';
+    document.getElementById('uploadText').style.display = 'block';
+    document.getElementById('uploadText').textContent = '📷 Tocá para subir una imagen';
+  }
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideForm() {
+  document.getElementById('formCard').style.display = 'none';
+  clearForm();
+  editingId = null;
+}
+
+function clearForm() {
+  ['fId','fName','fDesc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fPrice').value = '24999';
+  document.getElementById('fPuffs').value = '40.000';
+  document.getElementById('fStock').value = 'true';
+  document.getElementById('fOrder').value = '99';
+  document.getElementById('fImg').value = '';
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('uploadText').style.display = 'block';
+}
+
+function previewImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('imgPreview');
+    prev.src = e.target.result;
+    prev.style.display = 'block';
+    document.getElementById('uploadText').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProduct() {
+  const id    = document.getElementById('fId').value.trim().replace(/\s+/g,'_');
+  const name  = document.getElementById('fName').value.trim();
+  const price = parseInt(document.getElementById('fPrice').value) || 24999;
+  const puffs = document.getElementById('fPuffs').value.trim() || '40.000';
+  const stock = document.getElementById('fStock').value === 'true';
+  const order = parseInt(document.getElementById('fOrder').value) || 99;
+  const desc  = document.getElementById('fDesc').value.trim();
+  const imgFile = document.getElementById('fImg').files[0];
+
+  if (!name) { showToast('Ingresá un nombre', 'error'); return; }
+  if (!editingId && !id) { showToast('Ingresá un ID', 'error'); return; }
+
+  document.getElementById('saveBtnText').textContent = 'Guardando...';
+
+  try {
+    let image_url = null;
+
+    // Upload image if selected
+    if (imgFile) {
+      const prodId = editingId || id;
+      image_url = await uploadImage(imgFile, prodId);
+    }
+
+    const data = { name, price, puffs, stock, sort_order: order, description: desc };
+    if (image_url) data.image_url = image_url;
+
+    if (editingId) {
+      // Update existing
+      await sbFetch(`/rest/v1/products?id=eq.${editingId}`, 'PATCH', data);
+      // Actualizar el array en memoria para que el modal muestre datos frescos
+      const idx = products.findIndex(x => x.id === editingId);
+      if (idx !== -1) Object.assign(products[idx], data);
+      showToast('✓ Producto actualizado', 'success');
+      // Forzar recarga de imagen en la lista (cache-bust)
+      const rowImg = document.querySelector(`#row_${editingId} .prod-img`);
+      if (rowImg && image_url) { rowImg.src = image_url + '&r=' + Date.now(); }
+    } else {
+      // Insert new
+      data.id = id;
+      await sbFetch('/rest/v1/products', 'POST', data);
+      showToast('✓ Producto agregado', 'success');
+    }
+
+    hideForm();
+    await loadProducts();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    document.getElementById('saveBtnText').textContent = editingId ? 'Guardar cambios' : 'Guardar producto';
+  }
+}
+
+async function deleteProduct(id, name) {
+  if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await sbFetch(`/rest/v1/products?id=eq.${id}`, 'DELETE');
+    showToast(`Producto "${name}" eliminado`, '');
+    await loadProducts();
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = 'toast', 3000);
+}
+</script>
+
+</body>
+</html>
