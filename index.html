@@ -770,7 +770,10 @@ async function fetchProducts() {
 }
 
 function getImg(p) {
-  return p.image_url || FALLBACK_IMGS[p.id] || null;
+  // image_url de Supabase tiene PRIORIDAD — si existe, usarla siempre
+  if (p.image_url && p.image_url.startsWith('http')) return p.image_url;
+  // Fallback: imagen base64 embebida
+  return FALLBACK_IMGS[p.id] || null;
 }
 
 function renderCards(products) {
