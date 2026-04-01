@@ -26,7 +26,11 @@
     .login-box input::placeholder{color:var(--muted)}
     .btn-grad{width:100%;padding:.9rem;background:var(--grad);border:none;border-radius:100px;color:#fff;font-family:var(--font-body);font-size:.85rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
     .btn-grad:hover{opacity:.85}
-    .login-error{color:#ff6b6b;font-size:.8rem;margin-top:.75rem;display:none}
+    .login-error{color:#ff6b6b;font-size:.8rem;margin-top:.75rem;min-height:1.1rem}
+    .attempts-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,.07);border-radius:100px;margin:.2rem 0 .5rem;overflow:hidden}
+    .attempts-bar{height:100%;width:0%;border-radius:100px;transition:width .4s cubic-bezier(.4,0,.2,1),background .4s}
+    .attempts-label{font-size:.72rem;color:var(--muted);margin-bottom:.9rem;min-height:.9rem;text-align:left;letter-spacing:.02em}
+    #loginBtn:disabled{opacity:.4;cursor:not-allowed}
 
     /* ── ADMIN UI ── */
     #adminUI{display:none;padding:1.5rem;max-width:1100px;margin:0 auto}
@@ -106,9 +110,13 @@
   <div class="login-box">
     <div class="login-logo">Saint Vapos</div>
     <div class="login-sub">Panel Administrador</div>
-    <input type="password" id="passInput" placeholder="Contraseña" autocomplete="current-password"/>
-    <button class="btn-grad" onclick="tryLogin()">Ingresar</button>
-    <div class="login-error" id="loginError">Contraseña incorrecta</div>
+    <input type="password" id="passInput" placeholder="Contraseña" autocomplete="current-password" oninput="updateBar()"/>
+    <div class="attempts-bar-wrap">
+      <div class="attempts-bar" id="attemptsBar"></div>
+    </div>
+    <div class="attempts-label" id="attemptsLabel"></div>
+    <button class="btn-grad" id="loginBtn" onclick="tryLogin()">Ingresar</button>
+    <div class="login-error" id="loginError"></div>
   </div>
 </div>
 
@@ -207,17 +215,99 @@ async function sha256(str) {
 // ── AUTH ──
 let editingId = null;
 
+const MAX_ATTEMPTS = 3;
+const BLOCK_MINUTES = 10;
+
+function getAttemptData() {
+  try { return JSON.parse(localStorage.getItem('sv_attempts') || '{"count":0,"blockedUntil":0}'); }
+  catch { return {count:0, blockedUntil:0}; }
+}
+function setAttemptData(data) { localStorage.setItem('sv_attempts', JSON.stringify(data)); }
+
+function updateBar() {
+  const data = getAttemptData();
+  // Only show bar after at least 1 failed attempt
+  if (data.count === 0) {
+    document.getElementById('attemptsBar').style.width = '0%';
+    document.getElementById('attemptsLabel').textContent = '';
+    return;
+  }
+  const pct = (data.count / MAX_ATTEMPTS) * 100;
+  const bar = document.getElementById('attemptsBar');
+  bar.style.width = pct + '%';
+  if (data.count === 1) { bar.style.background = '#00b894'; }
+  else if (data.count === 2) { bar.style.background = '#fdcb6e'; }
+  else { bar.style.background = '#d63031'; }
+  const remaining = MAX_ATTEMPTS - data.count;
+  document.getElementById('attemptsLabel').textContent =
+    remaining > 0 ? `${data.count} intento${data.count>1?'s':''} fallido${data.count>1?'s':''} · te ${remaining===1?'queda':'quedan'} ${remaining}` : '';
+}
+
+function checkBlocked() {
+  const data = getAttemptData();
+  const now = Date.now();
+  if (data.blockedUntil && now < data.blockedUntil) {
+    const mins = Math.ceil((data.blockedUntil - now) / 60000);
+    showBlocked(mins);
+    return true;
+  }
+  return false;
+}
+
+function showBlocked(mins) {
+  document.getElementById('loginError').textContent =
+    `🔒 Demasiados intentos. Volvé en ${mins} minuto${mins>1?'s':''}.`;
+  document.getElementById('loginBtn').disabled = true;
+  document.getElementById('passInput').disabled = true;
+  // Countdown update
+  clearInterval(window._blockTimer);
+  window._blockTimer = setInterval(() => {
+    const data = getAttemptData();
+    const remaining = Math.ceil((data.blockedUntil - Date.now()) / 60000);
+    if (remaining <= 0) {
+      clearInterval(window._blockTimer);
+      setAttemptData({count:0, blockedUntil:0});
+      document.getElementById('loginBtn').disabled = false;
+      document.getElementById('passInput').disabled = false;
+      document.getElementById('loginError').textContent = '';
+      document.getElementById('attemptsBar').style.width = '0%';
+      document.getElementById('attemptsLabel').textContent = '';
+    } else {
+      document.getElementById('loginError').textContent =
+        `🔒 Demasiados intentos. Volvé en ${remaining} minuto${remaining>1?'s':''}.`;
+    }
+  }, 15000);
+}
+
 async function tryLogin() {
+  if (checkBlocked()) return;
   const pass = document.getElementById('passInput').value;
+  if (!pass) return;
   const hash = await sha256(pass);
   if (hash === PASS_HASH) {
+    // Éxito — limpiar intentos
+    setAttemptData({count:0, blockedUntil:0});
     sessionStorage.setItem('sv_admin', '1');
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminUI').style.display = 'block';
     loadProducts();
   } else {
-    document.getElementById('loginError').style.display = 'block';
-    document.getElementById('passInput').value = '';
+    const data = getAttemptData();
+    data.count = (data.count || 0) + 1;
+    if (data.count >= MAX_ATTEMPTS) {
+      data.blockedUntil = Date.now() + BLOCK_MINUTES * 60 * 1000;
+      setAttemptData(data);
+      document.getElementById('passInput').value = '';
+      updateBar();
+      showBlocked(BLOCK_MINUTES);
+    } else {
+      setAttemptData(data);
+      document.getElementById('passInput').value = '';
+      updateBar();
+      const remaining = MAX_ATTEMPTS - data.count;
+      document.getElementById('loginError').textContent =
+        `Contraseña incorrecta · ${remaining} intento${remaining>1?'s':''} restante${remaining>1?'s':''}`;
+    }
   }
 }
 
@@ -235,6 +325,10 @@ if (sessionStorage.getItem('sv_admin') === '1') {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('adminUI').style.display = 'block';
   loadProducts();
+} else {
+  // Restore block state if still active
+  checkBlocked();
+  updateBar();
 }
 
 // ── SUPABASE HELPERS ──
